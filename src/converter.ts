@@ -83,26 +83,23 @@ function convert(n: Node, ctx: Context): string {
 
     // ── Code ─────────────────────────────────────────────────────────────
     case 'code': {
-      const parentTag = (el.parentNode as HTMLElement | null)?.tagName?.toLowerCase();
-      if (parentTag === 'pre') {
-        // Raw content; will be used by the `pre` handler below
-        return el.rawText;
-      }
       const c = decodeEntities(el.innerText);
       return c ? `\`${c}\`` : '';
     }
     case 'pre': {
-      const codeEl = el.querySelector('code');
+      // el.rawText contains the raw inner HTML (e.g. <code class="...">...</code>)
+      // because <pre> is treated as a block text element by the parser.
+      const rawInner = el.rawText;
       let lang = '';
       let content = '';
 
-      if (codeEl) {
-        const cls = codeEl.getAttribute('class') ?? '';
-        const m = cls.match(/(?:language|lang)-(\S+)/);
-        lang = m?.[1] ?? '';
-        content = decodeEntities(codeEl.rawText);
+      const codeWrap = rawInner.match(/^<code([^>]*)>([\s\S]*?)<\/code>\s*$/s);
+      if (codeWrap) {
+        const langM = codeWrap[1].match(/(?:language|lang)-(\S+?)(?:["'\s]|$)/);
+        lang = langM?.[1] ?? '';
+        content = decodeEntities(codeWrap[2]);
       } else {
-        content = decodeEntities(el.rawText);
+        content = decodeEntities(rawInner);
       }
 
       // Remove the final trailing newline so the closing fence sits cleanly
@@ -273,13 +270,13 @@ function clean(text: string): string {
  */
 export function htmlToMarkdown(html: string): string {
   const root = parse(html, {
-    // Keep script/style as raw text so we can discard them safely,
-    // but parse <pre> as a real DOM subtree so querySelector('code') works.
+    // Keep these as raw text so we can discard or handle them correctly.
+    // pre:true preserves the full inner HTML in rawText for code block extraction.
     blockTextElements: {
       script: true,
       noscript: true,
       style: true,
-      pre: false,
+      pre: true,
     },
   });
   const raw = convert(root, { listDepth: 0 });
