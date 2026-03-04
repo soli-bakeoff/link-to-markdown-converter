@@ -1,0 +1,16 @@
+{
+  "name": "link-to-markdown-converter",
+  "version": "1.0.0",
+  "description": "URL Fetch & Content Extraction Service",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test.js"
+  },
+  "dependencies": {
+    "@mozilla/readability": "^0.5.0",
+    "express": "^4.18.2",
+    "jsdom": "^24.0.0",
+    "node-fetch": "^2.7.0"
+  }
+}
